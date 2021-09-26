@@ -104,7 +104,8 @@ def search_params():
             for key in list(parameters.all_messages.keys()):
                 print("Checking " + key)
                 m = parameters.all_messages[key]
-                for i in range(m.val_min, m.val_max)[:3]:
+                found = False
+                for i in range(m.val_min, m.val_max + 1)[:3]:
                     m.send(outport,  i)
                     msg = fetch_current(inport, outport)
                     for b in range(len(msg.data)):
@@ -112,13 +113,14 @@ def search_params():
                             if bytes[b] != "" and bytes[b] != key:
                                 print("Conflict at byte " + str(b) + " between " + bytes[b] + " and " + key )   
                             bytes[b] = key
+                            found = True
+                if not found:
+                    print("Could not find byte for parameter " + key)
                 m.send(outport,  m.default)
                 last = fetch_current(inport, outport)
 
     display_bytes(messages, bytes)           
 
-listen()
-search_params()
 
 def print_changed_bytes():
     last = []
@@ -138,20 +140,24 @@ def print_changed_bytes():
 # o1c = parameters.parameters["Oscillator 1 Coarse"]
 
 
+# print_changed_bytes()
+search_params()
+listen()
 
-a = messages[random.randrange(len(messages))].data
-b = a
-while b == a:
-    b = messages[random.randrange(len(messages))].data
+def send_random_patch():
+    a = messages[random.randrange(len(messages))].data
+    b = a
+    while b == a:
+        b = messages[random.randrange(len(messages))].data
 
-d = list(a)
-for i in range(len(d)):
-    if bool(random.getrandbits(1)):
-        d[i] = b[i]
+    d = list(a)
+    for i in range(len(d)):
+        if bool(random.getrandbits(1)):
+            d[i] = b[i]
 
 
 
-d = mido.Message('sysex', data=d)
+    d = mido.Message('sysex', data=d)
 
-with mido.open_output() as outport:
-    outport.send(d)
+    with mido.open_output() as outport:
+        outport.send(d)
