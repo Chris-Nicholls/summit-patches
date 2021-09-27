@@ -1,8 +1,8 @@
 import mido 
 import random
 import collections
-import base64
 import parameters
+import pprint
 
 def read_patches(name, count):
     ms = [] 
@@ -119,7 +119,8 @@ def search_params():
                 m.send(outport,  m.default)
                 last = fetch_current(inport, outport)
 
-    display_bytes(messages, bytes)           
+    display_bytes(messages, bytes)    
+    pprint.pprint(bytes)
 
 
 def print_changed_bytes():
@@ -161,3 +162,13 @@ def send_random_patch():
 
     with mido.open_output() as outport:
         outport.send(d)
+
+
+def mix_patches(patch_a_bytes, patch_b_bytes):
+    out = [x for x in patch_a_bytes]
+    for group in parameters.patch_groups:
+        pick = patch_a_bytes if bool(random.getrandbits(1)) else patch_b_bytes
+        for param in group:
+            byte_index = byte_mapping[param]
+            out[byte_index]=pick[byte_index]
+    return out

@@ -272,32 +272,294 @@ for i in range(4):
 
 all_messages = {**parameters, **mod_matrix , **fx_mod_matrix}
 
-#     "Mod Matrix 1 Source1": NRPN(cc1=1, cc2=0, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 1 Source2": NRPN(cc1=1, cc2=1, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 1 Depth": NRPN(cc1=1, cc2=2, val_min=0, val_max=127, default_val=64),
-#     "Mod Matrix 1 Destination": NRPN(cc1=1, cc2=3, val_min=0, val_max=36, default_val=0),
-#     "Mod Matrix 2 Source1": NRPN(cc1=2, cc2=0, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 2 Source2": NRPN(cc1=2, cc2=1, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 2 Depth": NRPN(cc1=2, cc2=2, val_min=0, val_max=127, default_val=64),
-#     "Mod Matrix 2 Destination": NRPN(cc1=2, cc2=3, val_min=0, val_max=36, default_val=0),
-#     "Mod Matrix 3 Source1": NRPN(cc1=3, cc2=0, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 3 Source2": NRPN(cc1=3, cc2=1, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 3 Depth": NRPN(cc1=3, cc2=2, val_min=0, val_max=127, default_val=64),
-#     "Mod Matrix 3 Destination": NRPN(cc1=3, cc2=3, val_min=0, val_max=36, default_val=0),
-#     "Mod Matrix 4 Source1": NRPN(cc1=4, cc2=0, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 4 Source2": NRPN(cc1=4, cc2=1, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 4 Depth": NRPN(cc1=4, cc2=2, val_min=0, val_max=127, default_val=64),
-#     "Mod Matrix 4 Destination": NRPN(cc1=4, cc2=3, val_min=0, val_max=36, default_val=0),
-#     "Mod Matrix 5 Source1": NRPN(cc1=5, cc2=0, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 5 Source2": NRPN(cc1=5, cc2=1, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 5 Depth": NRPN(cc1=5, cc2=2, val_min=0, val_max=127, default_val=64),
-#     "Mod Matrix 5 Destination": NRPN(cc1=5, cc2=3, val_min=0, val_max=36, default_val=0),
-#     "Mod Matrix 6 Source1": NRPN(cc1=6, cc2=0, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 6 Source2": NRPN(cc1=6, cc2=1, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 6 Depth": NRPN(cc1=6, cc2=2, val_min=0, val_max=127, default_val=64),
-#     "Mod Matrix 6 Destination": NRPN(cc1=6, cc2=3, val_min=0, val_max=36, default_val=0),
-#     "Mod Matrix 7 Source1": NRPN(cc1=7, cc2=0, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 7 Source2": NRPN(cc1=7, cc2=1, val_min=0, val_max=16, default_val=0),
-#     "Mod Matrix 7 Depth": NRPN(cc1=7, cc2=2, val_min=0, val_max=127, default_val=64),
-#     "Mod Matrix 7 Destination": NRPN(cc1=7, cc2=3, val_min=0, val_max=36, default_val=0)
-# }
+
+'''
+Mixing FM and Pitch from two patches might often be bad
+same with waveform/wave shape 
+Want to avoid mixing FM source with random: wave shape, pitch mod if the envelope is non-zero
+if FM A>B is non zero, then group:
+   A Pitch 
+   A Wave
+   (A Mod)
+   B Pitch
+'''
+
+patch_groups = {
+    "Pitch" : [         
+        "Oscillator 2 Range",
+        "Oscillator 2 Coarse",
+        "Oscillator 2 Fine",
+        "Oscillator 3 Range",
+        "Oscillator 3 Coarse",
+        "Oscillator 3 Fine",
+    ],
+
+    "FM" : [
+        "FM 3>1 Source",
+        "FM 3>1 Manual",
+        "FM 3>1 Mod Env 2",
+        "FM 3>1 LFO 2",
+        "FM 1>2 Source",
+        "FM 1>2 Manual",
+        "FM 1>2 Mod Env 2",
+        "FM 1>2 LFO 2",
+        "FM 2>3 Source",
+        "FM 2>3 Manual",
+        "FM 2>3 Mod Env 2",
+        "FM 2>3 LFO 2",
+    ],
+
+    "Osc1 Pitch": [
+        "Oscillator 1 Range",
+        "Oscillator 1 Coarse",
+        "Oscillator 1 Fine",
+    ],
+
+    "Osc1 Wave": [ 
+        "Oscillator 1 Wave",
+        "Oscillator 1 Wave More",
+        "Oscillator 1 Shape Source",
+        "Oscillator 1 Manual Shape",
+        "Oscillator 1 Vsync",
+        "Oscillator 1 Saw Density",
+        "Oscillator 1 Saw Density Detune",
+        "Oscillator 1 Fixed Note",
+        "Oscillator 1 Bend Range",
+        "Mixer Osc1",
+    ],
+
+    "Osc1 Mod": [
+        "Oscillator 1 ModEnv2 > Pitch",
+        "Oscillator 1 LFO2 > Pitch",
+        "Oscillator 1 ModEnv1 > Shape",
+        "Oscillator 1 LFO1 > Shape",
+    ],
+
+    "Osc2 Wave" : [
+        "Oscillator 2 Wave",
+        "Oscillator 2 Wave More",
+        "Oscillator 2 Shape Source",
+        "Oscillator 2 Manual Shape",
+        "Oscillator 2 Vsync",
+        "Oscillator 2 Saw Density",
+        "Oscillator 2 Saw Density Detune",
+        "Oscillator 2 Fixed Note",
+        "Oscillator 2 Bend Range",
+        "Mixer Osc2",
+    ],
+
+    "Osc2 Mod":[
+        "Oscillator 2 ModEnv1 > Shape",
+        "Oscillator 2 LFO1 > Shape",
+        "Oscillator 2 ModEnv2 > Pitch",
+        "Oscillator 2 LFO2 > Pitch",
+    ],
+
+    "Osc3 Wave" : [
+        "Oscillator 3 Wave",
+        "Oscillator 3 Wave More",
+        "Oscillator 3 Shape Source",
+        "Oscillator 3 Manual Shape",
+        "Oscillator 3 Vsync",
+        "Oscillator 3 Saw Density",
+        "Oscillator 3 Saw Density Detune",
+        "Oscillator 3 Fixed Note",
+        "Oscillator 3 Bend Range",
+        "Mixer Osc3",
+    ],
+
+    "Osc3 Mod" : [
+        "Oscillator 3 ModEnv2 > Pitch",
+        "Oscillator 3 LFO2 > Pitch",
+        "Oscillator 3 ModEnv1 > Shape",
+        "Oscillator 3 LFO1 > Shape"
+    ],
+
+    "Ring": ["Ring 1*2 Level"],
+
+    "Voice" : [
+        "Patch Category",
+        "Patch Genre",
+        "Voice Mode",
+        "Voice Unison",
+        "Voice Unison Detune",
+        "Voice Unison Spread",
+        "Voice Keyboard Octave",
+        "Glide Time",
+        "Voice Pre-Glide",
+        "Glide On",
+        "Osc Common Diverge",
+        "Osc Common Drift",
+        "Osc Common Key Sync",
+    ],
+
+    "Noise" : [
+        "Osc Common Noise LPF",
+        "Osc Common Noise HPF",
+        "Noise Level",
+    ],
+
+    "Gain": [
+        "Mixer Patch Level",
+        "Mixer VCA gain",
+        "Filter Overdrive",
+        "Filter Post Drive",
+        "Distortion level",
+    ],
+
+    "Filter" : [
+        "Filter Slope",
+        "Filter Shape",
+        "Filter Dual Shape",
+        "Filter Freq Seperation",
+        "Filter Key Tracking",
+        "Filter Resonance",
+        "Filter Frequency",
+        "Filter Divergence",
+    ],
+
+    "Filter Mod": [
+        "LFO1 > Filter",
+        "Osc3 > Filter",
+        "Filter Env Select",
+        "AmpEnv > Filter",
+        "ModEnv1 > Filter",
+    ],
+
+    "Amp Envelope": [
+        "Amp Envelope Attack",
+        "Amp Envelope Decay",
+        "Amp Envelope Sustain",
+        "Amp Envelope Release",
+        "Amp Envelope Velocity",
+        "Amp Envelope Trigger",
+        "Amp Envelope Delay",
+        "Amp Envelope HoldTime",
+        "Amp Envelope Repeats",
+        "Amp Envelope Loop",
+    ],
+
+    "Mod Envelope 1" : [
+        "Mod Envelope 1 Attack",
+        "Mod Envelope 1 Decay",
+        "Mod Envelope 1 Sustain",
+        "Mod Envelope 1 Release",
+        "Mod Envelope 1 Velocity",
+        "Mod Envelope 1 Trigger",
+        "Mod Envelope 1 Delay",
+        "Mod Envelope 1 HoldTime",
+        "Mod Envelope 1 Repeats",
+        "Mod Envelope 1 Loop",
+    ],
+
+    "Mod Envelope 2" : [
+        "Mod Envelope 2 Attack",
+        "Mod Envelope 2 Decay",
+        "Mod Envelope 2 Sustain",
+        "Mod Envelope 2 Release",
+        "Mod Envelope 2 Velocity",
+        "Mod Envelope 2 Trigger",
+        "Mod Envelope 2 Delay",
+        "Mod Envelope 2 HoldTime",
+        "Mod Envelope 2 Repeats",
+        "Mod Envelope 2 Loop",
+    ],
+
+    "LFO 1" : [
+        "LFO 1 Range",
+        "LFO 1 Rate",
+        "LFO 1 Sync Rate",
+        "LFO 1 Wave",
+        "LFO 1 Phase",
+        "LFO 1 Slew",
+        "LFO 1 Fade Time",
+        "LFO 1 Fade In/Out",
+        "LFO 1 Fade Sync",
+        "LFO 1 Mono Trigger",
+        "LFO 1 One Shot",
+        "LFO 1 Common",
+    ],
+
+    "LFO 2": [
+        "LFO 2 Range",
+        "LFO 2 Rate",
+        "LFO 2 Sync Rate",
+        "LFO 2 Wave",
+        "LFO 2 Phase",
+        "LFO 2 Slew",
+        "LFO 2 Fade Time",
+        "LFO 2 Fade In/Out",
+        "LFO 1 Fade Sync",
+        "LFO 2 One Shot",
+        "LFO 2 Common",
+    ],
+
+    "FX" : [
+        "Mixer Dry Level",
+        "Mixer Wet Level",
+        "Effects Master Bypass",
+        "Effects Routing",
+    ],
+
+    "Delay":[
+        "Delay Level",
+        "Delay Time",
+        "Delay Width",
+        "Delay Sync",
+        "Delay Sync Time",
+        "Delay Feedback",
+        "Delay LP Damp",
+        "Delay HP Damp",
+        "Delay Slew Rate",
+    ],
+
+    "Reverb" : [
+        "Reverb Level",
+        "Reverb Type",
+        "Reverb Time",
+        "Reverb Damping LP",
+        "Reverb Damping HP",
+        "Reverb Size",
+        "Reverb Mod",
+        "Reverb Mod Rate",
+        "Reverb Low Pass",
+        "Reverb High Pass",
+        "Reverb Pre Delay"
+    ],
+
+    "Chorus" : [
+        "Chorus Level",
+        "Chorus Type",
+        "Chorus Rate",
+        "Chorus Mod Depth",
+        "Chorus Feedback",
+        "Chorus LP",
+        "Chorus HP",
+    ],
+
+    "Arp" : [
+        "Arp/Clock Sync Rate",
+        "Arp/Clock Type",
+        "Arp/Clock Rhythm",
+        "Arp/Clock Octave",
+        "Arp/Clock Gate",
+        "Arp/Clock Swing",
+        "Arp/Clock On",
+        "Arp/Clock Key Latch",
+        "Arp/Clock Key Sync",
+        "Arp Velocity Mode",
+        "Clock Source",
+    ],
+
+    "LFO3" : [
+        "LFO 3 Shape",
+        "LFO 3 Rate",
+        "LFO 3 Sync Rate",
+    ],
+
+    "LFO 4" : [
+        "LFO 4 Shape",
+        "LFO 4 Rate",
+        "LFO 4 Sync Rate",
+    ]
+}
