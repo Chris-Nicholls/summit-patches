@@ -3,6 +3,7 @@ import random
 import collections
 import parameters
 import pprint
+from byte_mapping import byte_mapping
 
 def read_patches(name, count):
     ms = [] 
@@ -21,6 +22,11 @@ def read_patches(name, count):
 
 messages = mido.read_syx_file('patch.syx')
 
+
+def get_patch_name(patch_bytes):
+    n = patch_bytes[7:31]
+    cs = [chr(x) for x in n]
+    return ''.join(cs)
 
 def print_message(message):
     print(message)
@@ -95,6 +101,7 @@ def search_params():
     init_patch()
     sysex = []
     bytes = [""] * 600
+    byte_mapping = {}
     with mido.open_output() as outport:
         outport.callback = print_message
         with mido.open_input() as inport:
@@ -113,6 +120,7 @@ def search_params():
                             if bytes[b] != "" and bytes[b] != key:
                                 print("Conflict at byte " + str(b) + " between " + bytes[b] + " and " + key )   
                             bytes[b] = key
+                            byte_mapping[key] = b
                             found = True
                 if not found:
                     print("Could not find byte for parameter " + key)
@@ -120,7 +128,7 @@ def search_params():
                 last = fetch_current(inport, outport)
 
     display_bytes(messages, bytes)    
-    pprint.pprint(bytes)
+    pprint.pprint(byte_mapping)
 
 
 def print_changed_bytes():
@@ -142,8 +150,8 @@ def print_changed_bytes():
 
 
 # print_changed_bytes()
-search_params()
-listen()
+# search_params()
+# listen()
 
 def send_random_patch():
     a = messages[random.randrange(len(messages))].data
@@ -156,8 +164,6 @@ def send_random_patch():
         if bool(random.getrandbits(1)):
             d[i] = b[i]
 
-
-
     d = mido.Message('sysex', data=d)
 
     with mido.open_output() as outport:
@@ -167,8 +173,32 @@ def send_random_patch():
 def mix_patches(patch_a_bytes, patch_b_bytes):
     out = [x for x in patch_a_bytes]
     for group in parameters.patch_groups:
-        pick = patch_a_bytes if bool(random.getrandbits(1)) else patch_b_bytes
-        for param in group:
+        b = random.getrandbits(1)
+        pick = patch_a_bytes if b else patch_b_bytes
+        print(group + " " + str(b))
+        for param in parameters.patch_groups[group]:
             byte_index = byte_mapping[param]
             out[byte_index]=pick[byte_index]
     return out
+
+
+def send_mixed_patch(messages):
+    messages = [m.data for m in messages]
+    a = messages[random.randrange(len(messages))]
+    # a = messages[0]
+    b = a
+    while b == a:
+        b = messages[random.randrange(len(messages))]
+
+    print(get_patch_name(a))
+    print(get_patch_name(b))
+
+    d = mix_patches(a,b)
+
+    d = mido.Message('sysex', data=d)
+
+    with mido.open_output() as outport:
+        outport.send(d)
+
+
+send_mixed_patch(mido.read_syx_file('patch.syx'))

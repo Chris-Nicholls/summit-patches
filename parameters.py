@@ -285,10 +285,19 @@ if FM A>B is non zero, then group:
 '''
 
 patch_groups = {
-    "Pitch" : [         
+    "Osc1 Pitch": [
+        "Oscillator 1 Range",
+        "Oscillator 1 Coarse",
+        "Oscillator 1 Fine",
+    ],
+
+    "Osc2 Pitch" : [         
         "Oscillator 2 Range",
         "Oscillator 2 Coarse",
         "Oscillator 2 Fine",
+    ],
+
+    "Osc3 Pitch": [
         "Oscillator 3 Range",
         "Oscillator 3 Coarse",
         "Oscillator 3 Fine",
@@ -307,12 +316,6 @@ patch_groups = {
         "FM 2>3 Manual",
         "FM 2>3 Mod Env 2",
         "FM 2>3 LFO 2",
-    ],
-
-    "Osc1 Pitch": [
-        "Oscillator 1 Range",
-        "Oscillator 1 Coarse",
-        "Oscillator 1 Fine",
     ],
 
     "Osc1 Wave": [ 
@@ -548,7 +551,6 @@ patch_groups = {
         "Arp/Clock Key Latch",
         "Arp/Clock Key Sync",
         "Arp Velocity Mode",
-        "Clock Source",
     ],
 
     "LFO3" : [
