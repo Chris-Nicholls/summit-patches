@@ -20,11 +20,11 @@ def read_patches(name, count):
 
 # read_patches("increment.syx", 30)
 
-messages = mido.read_syx_file('patch.syx')
+messages = mido.read_syx_file('all.syx')
 
 
 def get_patch_name(patch_bytes):
-    n = patch_bytes[7:31]
+    n = patch_bytes[15: 31]
     cs = [chr(x) for x in n]
     return ''.join(cs)
 
@@ -151,7 +151,6 @@ def print_changed_bytes():
 
 # print_changed_bytes()
 # search_params()
-# listen()
 
 def send_random_patch():
     a = messages[random.randrange(len(messages))].data
@@ -175,7 +174,7 @@ def mix_patches(patch_a_bytes, patch_b_bytes):
     for group in parameters.patch_groups:
         b = random.getrandbits(1)
         pick = patch_a_bytes if b else patch_b_bytes
-        print(group + " " + str(b))
+        # print(group + " " + str(b))
         for param in parameters.patch_groups[group]:
             byte_index = byte_mapping[param]
             out[byte_index]=pick[byte_index]
@@ -190,8 +189,7 @@ def send_mixed_patch(messages):
     while b == a:
         b = messages[random.randrange(len(messages))]
 
-    print(get_patch_name(a))
-    print(get_patch_name(b))
+    print(get_patch_name(a) + " " + get_patch_name(b))
 
     d = mix_patches(a,b)
 
@@ -200,5 +198,34 @@ def send_mixed_patch(messages):
     with mido.open_output() as outport:
         outport.send(d)
 
+def fetch_all_patches():
+    ms = []
+    with mido.open_output() as outport:
+        with mido.open_input() as inport:
+            for bank in [1,2,3,4]:
+                for patch in range(128):
+                    outport.send(mido.Message('control_change', channel=0, control=32, value=bank))
+                    outport.send(mido.Message('program_change', channel=0, program=patch))
+                    msg = fetch_current(inport, outport)
+                    if not get_patch_name(msg.data).startswith("Init Patch"):
+                        print(get_patch_name(msg.data))
+                        ms.append(msg)
 
-send_mixed_patch(mido.read_syx_file('patch.syx'))
+    mido.write_syx_file("all.syx", ms)
+
+
+# fetch_all_patches()
+# print(len(messages))
+# for m in messages:
+#     print(get_patch_name(m.data))
+def wait_for_animate(inport):
+    for msg in inport:
+        if msg.type == 'control_change' and msg.control in [114,115] and msg.value == 127:
+            return
+
+
+# listen()
+with mido.open_input() as inport:
+    while True:
+        send_mixed_patch(messages)
+        wait_for_animate(inport)

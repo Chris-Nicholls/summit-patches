@@ -565,3 +565,21 @@ patch_groups = {
         "LFO 4 Sync Rate",
     ]
 }
+
+for i in range(16):
+    patch_groups["Mod matrix " + str(i)] = [
+        "Mod matrix " + str(i) + " Source 1",
+        "Mod matrix " + str(i) + " Source 2",
+        "Mod matrix " + str(i) + " Depth",
+        "Mod matrix " + str(i) + " Destination"
+    ]
+
+
+for i in range(4):
+    patch_groups["FX Mod Matrix " + str(i)] = [
+        "FX Mod matrix " + str(i) + " Source 1",
+        "FX Mod matrix " + str(i) + " Source 2",
+        "FX Mod matrix " + str(i) + " Depth",
+        "FX Mod matrix " + str(i) + " Destination"
+    ]
+
