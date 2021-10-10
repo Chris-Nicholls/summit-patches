@@ -566,13 +566,16 @@ patch_groups = {
     ]
 }
 
-for i in range(16):
-    patch_groups["Mod matrix " + str(i)] = [
+def mod_matrix_params(i):
+    return [
         "Mod matrix " + str(i) + " Source 1",
         "Mod matrix " + str(i) + " Source 2",
         "Mod matrix " + str(i) + " Depth",
         "Mod matrix " + str(i) + " Destination"
     ]
+
+for i in range(16):
+    patch_groups["Mod matrix " + str(i)] = mod_matrix_params(i)
 
 
 for i in range(4):

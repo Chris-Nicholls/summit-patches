@@ -213,6 +213,38 @@ def fetch_all_patches():
 
     mido.write_syx_file("all.syx", ms)
 
+def get_all_mod_matrix_entries(messages):
+    entries = set()
+    for m in messages:
+        for i in range(16):
+            params = [
+                "Mod matrix " + str(i) + " Source 1",
+                "Mod matrix " + str(i) + " Source 2",
+                "Mod matrix " + str(i) + " Depth",
+                "Mod matrix " + str(i) + " Destination"
+            ]
+            byte_indexes = [byte_mapping[p] for p in params]
+            bytes = [m.data[b] for b in byte_indexes]
+            entries.add(tuple(bytes))
+    return entries
+
+def randomise_mod_matrix_of(bytes, all_mod_matrix_entries):
+    entries = random.sample(all_mod_matrix_entries, 16)
+    for i in range(16):
+        byte_indexes = [byte_mapping[p] for p in parameters.mod_matrix_params(i)]
+        for p in range(4):
+            bytes[byte_indexes[p]] = entries[i][p]
+    return bytes 
+
+
+def randomise_current_mod_matrix(messages):
+    mms = get_all_mod_matrix_entries(messages)
+    with mido.open_output() as outport:
+        with mido.open_input() as inport:
+            message = fetch_current(inport, outport)
+            message = mido.Message('sysex', data=randomise_mod_matrix_of(list(message.data), mms))
+            outport.send(message)
+
 
 # fetch_all_patches()
 # print(len(messages))
@@ -227,5 +259,6 @@ def wait_for_animate(inport):
 # listen()
 with mido.open_input() as inport:
     while True:
-        send_mixed_patch(messages)
+        # send_mixed_patch(messages)
+        randomise_current_mod_matrix(messages)
         wait_for_animate(inport)
